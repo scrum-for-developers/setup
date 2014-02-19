@@ -1,0 +1,5 @@
+module.exports = {
+  'user': 'cc-batch',
+  'password': '', // ask bripkens for password
+  'tmp': '/tmp/training-setup'
+};
