@@ -2,14 +2,18 @@ var Q = require('q');
 var https = require('https');
 var parseUrl = require('url').parse;
 var childProcess = require('child_process');
+var settings = require('./settings');
 
-module.exports.request = function request(params) {
+var http = module.exports.http = {};
+
+
+var request = function request(params) {
     var options = parseUrl(params.url);
     options.method = params.method || 'GET';
+    options.headers = params.headers;
     if (params.user && params.password) {
       options.auth = params.user + ":" + params.password;
     }
-
     var deferred = Q.defer();
 
     var request = https.request(options, function(response) {
@@ -17,7 +21,19 @@ module.exports.request = function request(params) {
         if (statusCode >= 200 && statusCode < 300) {
             deferred.resolve(response);
         } else {
-            deferred.reject(new Error('Status code was: ' + statusCode));
+            http.readBody(response)
+            .then(function(body) {
+              var msg = 'Status code was: ' +
+                statusCode +
+                '. Request configuration: ' +
+                JSON.stringify(options, null, 2) +
+                '\n Response body: ' + body;
+              deferred.reject(new Error(msg));
+            })
+            .fail(function(err) {
+              deferred.reject(new Error(err));
+            })
+
         }
     });
 
@@ -34,7 +50,28 @@ module.exports.request = function request(params) {
     return deferred.promise;
 };
 
-module.exports.readBody = function readBody(response) {
+
+function defaultRequest(method, url, data) {
+  return request({
+    url: url,
+    method: method,
+    user: settings.user,
+    password: settings.password,
+    data: JSON.stringify(data),
+    headers: {
+      Accept: 'application/json',
+      'User-Agent': 'Worblehat Setup'
+    }
+  });
+}
+
+http.get = defaultRequest.bind(null, 'GET');
+http.post = defaultRequest.bind(null, 'POST');
+http.put = defaultRequest.bind(null, 'PUT');
+http.del = defaultRequest.bind(null, 'DELETE');
+
+
+http.readBody = function readBody(response) {
   var deferred = Q.defer();
 
   var data = [];
@@ -50,6 +87,14 @@ module.exports.readBody = function readBody(response) {
   });
 
   return deferred.promise;
+};
+
+
+module.exports.tap = function(prefix) {
+  return function(val) {
+    console.log('%s:', prefix, val);
+    return val;
+  }
 };
 
 module.exports.exec = function exec(cmd, env) {

@@ -1,5 +1,12 @@
 module.exports = {
-  'user': 'cc-batch',
-  'password': '', // ask bripkens for password
-  'tmp': '/tmp/training-setup'
+  user: 'cc-batch',
+  password: '', // ask bripkens for password
+  tmp: '/tmp/training-setup',
+  base: 'https://github.com/scrum-for-developers/worblehat.git',
+  target: 'scrum-for-developers',
+  teams: [
+    {
+      name: '2014-02-team-1'
+    }
+  ]
 };
